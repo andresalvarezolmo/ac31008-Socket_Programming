@@ -23,11 +23,11 @@ while 1:
    # print(text.decode('utf-8'))
    # print("--------------------\n")
    if text.find('!hello'.encode('utf-8')) != -1:
-      irc.send("PRIVMSG #hola :Hello User \r\n".encode('utf-8'))
+      irc.send(("PRIVMSG " + channel + " :Hello User \r\n").encode('utf-8'))
 
    elif text.find('!slap'.encode('utf-8')) != -1:
       # irc.send("NAMES 127.0.0.1 \r\n".encode('utf-8'))
-      irc.send("PRIVMSG #hola :got Slapped \r\n".encode('utf-8'))
+      irc.send(("PRIVMSG " + channel + " :got Slapped \r\n").encode('utf-8'))
    
    elif text.find('PRIVMSG bot :'.encode('utf-8')) != -1:
       parameters = text.split("!".encode("utf-8"))
