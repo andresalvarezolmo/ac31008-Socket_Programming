@@ -6,7 +6,10 @@ channel = "#hola"
 botnick = "bot"
 
 irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-print("Connecting to:"+server)
+# print("Connecting to: "+server)
+# print("Connecting to: "+channel)
+# print("Bot nick is: "+botnick)
+
 irc.connect((server, 6667))
 irc.send(("USER "+ botnick +" "+ botnick +" "+ botnick +" This is a fun  bot!\n").encode('utf-8'))
 irc.send(("NICK "+ botnick +"\n").encode('utf-8'))
@@ -23,14 +26,15 @@ while 1:
       irc.send("PRIVMSG #hola :Hello User \r\n".encode('utf-8'))
 
    elif text.find('!slap'.encode('utf-8')) != -1:
+      # irc.send("NAMES 127.0.0.1 \r\n".encode('utf-8'))
       irc.send("PRIVMSG #hola :got Slapped \r\n".encode('utf-8'))
    
    elif text.find('PRIVMSG bot :'.encode('utf-8')) != -1:
-      # recipient = text.decode('utf-8').split('PRIVMSG')
-      # print(text.decode('utf-8'))
-      irc.send("PRIVMSG alvar :Random sentence! \r\n".encode('utf-8'))
+      parameters = text.split("!".encode("utf-8"))
+      issuer = (parameters[0].decode("utf-8")).replace(':','')
+      irc.send(("PRIVMSG " + issuer + "  :Random\r\n").encode('utf-8'))
 
-   if text.find('end'.encode('utf-8')) != -1:
+   elif text.find('end'.encode('utf-8')) != -1:
       print('Connection closed')
       irc.close()
       break
