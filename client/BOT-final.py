@@ -8,16 +8,25 @@ ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server = "127.0.0.1" # Server
 channel = "#testing" # Channel
 
-botnick = "bot1234" #bot's name
-adminname = "Alina" #IRC nickname to send admin commands to the bot
-exitcode = "bye " + botnick #text to exit
+botnick = "BOT" #bot's name
+adminname = "ABC" #IRC nickname to send admin commands to the bot
+exitcode = "Bye " + botnick #text to exit
 afile = 'facts.txt' #file saving thr random facts available
+users = [] #list with all users on the channel
+user = "user"
 
-ircsock.connect((server, 6667)) # Here we connect to the server using the port 6667
+try:
+  ircsock.connect((server, 6667)) # Here we connect to the server using the port 6667
+except:
+  print("ERROR: Could not connect to server: " + server)
 
-#send some information to let the server know who we are. 
-ircsock.send(bytes("USER "+ botnick +" "+ botnick +" "+ botnick + " " + botnick + "\n", "UTF-8")) # user information
-ircsock.send(bytes("NICK "+ botnick +"\n", "UTF-8")) # assign the nick to the bot
+try:
+  #send some information to let the server know who we are. 
+  ircsock.send(bytes("USER "+ botnick +" "+ botnick +" "+ botnick + " " + botnick + "\n", "UTF-8")) # user information
+  ircsock.send(bytes("NICK "+ botnick +"\n", "UTF-8")) # assign the nick to the bot
+except:
+  print("ERROR: Could not send to server: " + server)
+
 
 # function to join a channel, pass name 
 def joinchan(chan):
@@ -32,12 +41,16 @@ def joinchan(chan):
   #  ircmsg = ircsock.recv(2048).decode("UTF-8")
   #  ircmsg = ircmsg.strip('\n\r')
 
+
+
 #respond with "PONG :pingis" to any PING 
 def ping():
   try:
     ircsock.send(bytes("PONG :pingis\n", "UTF-8"))
   except:
-    print("ERROR: could not send pong!")
+    print("ERROR: Could not send pong!")
+
+
 
 #send message to target 
 def sendmsg(msg, target):
@@ -46,15 +59,47 @@ def sendmsg(msg, target):
   except:
     print("ERROR: Could not send message to: " + target)
 
+
+
+#get a list of all users in channel and return random one
+def randomuser():
+  #get a list of all users on channel
+
+  ircsock.send(bytes("NAMES " + channel + "\r\n", "UTF-8")) #send names command to IRC server 
+  
+  userlist = ircsock.recv(2048).decode("UTF-8")
+  if userlist.find('NAMES') != -1:
+    print("..........")
+    
+    #TODO
+    #split from string 
+    #save items in list
+  
+  
+  
+  print("------------------")
+  print("userlist: " + userlist)
+  
+  #return random user (item in list)
+  #
+  
+  return user
+
+
+
 #slap a random user in the chat
 def slapuser(msg, target=channel):
   
-  #target = 
-  #TODO random user
+  usertoslap = randomuser()
+  message = msg + usertoslap + " *****"
+
   try:
-    ircsock.send(bytes("PRIVMSG "+ target +" :"+ msg +"\n", "UTF-8"))
+    ircsock.send(bytes("PRIVMSG "+ target +" :"+ message +"\n", "UTF-8"))
   except:
-    print("ERROR: Could not slap user: " + target)
+    print("ERROR: Could not slap user: " + usertoslap)
+
+
+
 
 #read random line from file
 def random_line(filename):
@@ -65,7 +110,9 @@ def random_line(filename):
 
   return random.choice(lines)
 
-#call the other functions as necessary and process the information received from IRC and determine what to do with it.
+
+
+#call the other functions as necessary and process the info
 def main():
   
   joinchan(channel) #join the channel
@@ -78,9 +125,10 @@ def main():
       ircmsg = ircsock.recv(2048).decode("UTF-8")
     except:
       print("ERROR: IRC server information problem!")
-
+    
     #remove any line break characters from the string
     ircmsg = ircmsg.strip('\n\r')
+
     #debugging: print the received information 
     print(ircmsg)
 
@@ -112,7 +160,7 @@ def main():
 
           #check for reqeust for fact
           if message.find('!slap') != -1:
-            slapuser("*** SLAPPED ***", channel)
+            slapuser("***** SLAPPED: ")
           
           #check for a ‘code’ at the beginning of a message and parse it to do a complex task. 
           #".tell [target] [message]” 
