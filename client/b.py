@@ -2,10 +2,16 @@
 import socket
 import random
 
-#the socket we’ll be using to connect and communicate with the IRC server. 
-ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#the socket we’ll be using to connect and communicate with the IRC server.
+ 
+# ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #to connect using ipv4 server
+ircsock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM) #to connect using ipv6 server
 #name of the server and channel we’ll be connecting to
-server = "127.0.0.1" # Server
+# server = "127.0.0.1" # Server localhost ipv4
+# server = "::1" # Server localhost ipv6
+# server = "" # Server
+server = "fc00:1337::19" # Actual ipv6 Server that will be used for marking
+
 channel = "#testing" # Channel
 
 botnick = "BOT" #bot's name
