@@ -23,23 +23,21 @@ while 1:
    # print(text.decode('utf-8'))
    # print("--------------------\n")
    if text.find('!hello'.encode('utf-8')) != -1:
-      irc.send(("PRIVMSG " + channel + " :Hello User \r\n").encode('utf-8'))
+      parameters = text.split("!".encode("utf-8"))
+      issuer = (parameters[0].decode("utf-8")).replace(':','')
+      irc.send(("PRIVMSG " + channel + " :Hello " + issuer + " \r\n").encode('utf-8'))
 
    elif text.find('!slap'.encode('utf-8')) != -1:
-      # irc.send("NAMES 127.0.0.1 \r\n".encode('utf-8'))
+      irc.send("NAMES #hola\r\n".encode('utf-8'))
       irc.send(("PRIVMSG " + channel + " :got Slapped \r\n").encode('utf-8'))
    
    elif text.find('PRIVMSG bot :'.encode('utf-8')) != -1:
       parameters = text.split("!".encode("utf-8"))
       issuer = (parameters[0].decode("utf-8")).replace(':','')
-      irc.send(("PRIVMSG " + issuer + "  :Random\r\n").encode('utf-8'))
+      irc.send(("PRIVMSG " + issuer + "  :This is a random fact\r\n").encode('utf-8'))
 
    elif text.find('end'.encode('utf-8')) != -1:
       print('Connection closed')
       irc.close()
       break
 
-   # if text.find(':!hi') !=-1:
-   #    t = text.split(':!hi')
-   #    to = t[1].strip()
-   #    irc.send('PRIVMSG '+channel+' :Hello '+str(to)+'! \r\n')
