@@ -27,7 +27,6 @@ try:
 except:
   print("ERROR: Could not send to server: " + server)
 
-
 # function to join a channel, pass name 
 def joinchan(chan):
   #send the message to IRC as UTF-8 encoded bytes
@@ -40,8 +39,8 @@ def joinchan(chan):
   #while ircmsg.find("End of /NAMES list.") == -1: #loop to continually check for and receive new info from server until we get a message with ‘End of /NAMES list.’
   #  ircmsg = ircsock.recv(2048).decode("UTF-8")
   #  ircmsg = ircmsg.strip('\n\r')
-
-
+  
+  
 
 #respond with "PONG :pingis" to any PING 
 def ping():
@@ -119,7 +118,6 @@ def main():
 
   #infinite loop to continually check for and receive new info from server. This ensures our connection stays open. 
   while 1:
-
     try:
       #receiving information from the IRC server
       ircmsg = ircsock.recv(2048).decode("UTF-8")
@@ -137,6 +135,7 @@ def main():
       #get name of the person who sent the message. 
       #Messages come in from from IRC in the format of 
       #":[Nick]!~[hostname]@[IP Address] PRIVMSG [channel] :[message]”
+
       name = ircmsg.split('!',1)[0][1:]
       message = ircmsg.split('PRIVMSG',1)[1].split(':',1)[1]
       origin = ircmsg.split('PRIVMSG ',1)[1].split(' ', 1)[0]
