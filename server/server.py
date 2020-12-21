@@ -43,7 +43,8 @@ class Server:
             "USER": self.user_msg,
             "JOIN" : self.join_msg,
             "PRIVMSG" : self.privmsg_msg,
-            "PING" : self.ping_msg
+            "PING" : self.ping_msg,
+            "NAMES" : self.names_msg
         }
 
     def connect(self, host, port=2020):
@@ -209,6 +210,11 @@ class Server:
     def ping_msg(self, client, params):
         return f"PONG{self.crlf}"
 
+    def names_msg(self, client, params):
+        channel_name = params[0]
+        client.sendmsg(f"{socket.gethostname()} 353 {client.nickname} = {channel_name} :{self.channels[channel_name].client_str()}{self.crlf}")
+        client.sendmsg(f"{socket.gethostname()} 366 {client.nickname} {channel_name} :End of Names list{self.crlf}")
+        return ""
 
     def usercount(self):
         return len(self.registered_clients)
