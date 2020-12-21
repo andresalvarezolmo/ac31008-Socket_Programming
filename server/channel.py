@@ -19,9 +19,7 @@ class Channel:
         if client not in self.clients:
             self.clients.append(client)
             for c in self.clients:
-                if c is client:
-                    continue
-                c.sendmsg(f":{client.nickname} JOIN {self.name}\n\r")
+                c.sendmsg(f":{client.nickname}!{client.username}@127.0.0.1 JOIN {self.name}\n\r")
 
     def client_str(self):
         """
@@ -44,7 +42,7 @@ class Channel:
             if c is sender:
                 continue
             logging.debug(f"in channel.braodcast: {c.nickname} - {c.socket}")
-            c.privmsg(sender.nickname, self.name, message)
+            c.privmsg(sender, self.name, message)
 
     def remove_user(self, to_remove):
         """

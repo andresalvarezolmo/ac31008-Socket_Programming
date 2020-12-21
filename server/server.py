@@ -26,7 +26,7 @@ class Server:
         "ERR_NOSUCHNICK": (401, "{} :No such nick/channel")
 
     }
-    crlf = '\n\r'
+    crlf = '\r\n'
 
     def __init__(self):
         self.server = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
@@ -74,6 +74,7 @@ class Server:
                 else:
                     data = s.recv(1024)
                     if data:
+                        print(data)
                         messages = data.decode('utf-8').split('\r\n')
                         for m in messages:
                             reply = self.parse_client_message(self.clients[s], m)
@@ -182,12 +183,12 @@ class Server:
             self.channels[channel_name] = new_channel
 
 
-        client.sendmsg(f"{socket.gethostname()} 331 {client.nickname} {channel_name} :No topic set{self.crlf}")
-        client.sendmsg(f"{socket.gethostname()} 353 {client.nickname} = {channel_name} :{self.channels[channel_name].client_str()}{self.crlf}")
-        client.sendmsg(f"{socket.gethostname()} 366 {client.nickname} {channel_name} :End of Names list{self.crlf}")
+        client.sendmsg(f":{socket.gethostname()} 331 {client.nickname} {channel_name} :No topic set{self.crlf}")
+        client.sendmsg(f":{socket.gethostname()} 353 {client.nickname} = {channel_name} :{self.channels[channel_name].client_str()}{self.crlf}")
+        client.sendmsg(f":{socket.gethostname()} 366 {client.nickname} {channel_name} :End of NAMES list{self.crlf}")
 
 
-        return f":{client.nickname} JOIN {channel_name}{self.crlf}"
+        return ""
 
     def privmsg_msg(self, client, params):
         logging.debug(f"[privmsg_msg] params: {params}")
@@ -202,7 +203,7 @@ class Server:
                 return self.generate_reply("ERR_NOSUCHNICK", args=(receipient))
         else:
             if receipient in self.registered_clients:
-                self.registered_clients[receipient].privmsg(client.nickname, receipient, text)
+                self.registered_clients[receipient].privmsg(client, receipient, text)
             else:
                 return self.generate_reply("ERR_NOSUCHNICK", args=(receipient))
 
@@ -213,8 +214,9 @@ class Server:
 
     def names_msg(self, client, params):
         channel_name = params[0]
-        client.sendmsg(f"{socket.gethostname()} 353 {client.nickname} = {channel_name} :{self.channels[channel_name].client_str()}{self.crlf}")
-        client.sendmsg(f"{socket.gethostname()} 366 {client.nickname} {channel_name} :End of Names list{self.crlf}")
+        if channel_name in self.channels:
+            client.sendmsg(f":{socket.gethostname()} 353 {client.nickname} = {channel_name} :{self.channels[channel_name].client_str()}{self.crlf}")
+        client.sendmsg(f":{socket.gethostname()} 366 {client.nickname} {channel_name} :End of NAMES list{self.crlf}")
         return ""
 
     def usercount(self):
