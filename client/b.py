@@ -18,6 +18,7 @@ adminname = "ABC" #IRC nickname to send admin commands to the bot
 exitcode = "Bye " + botnick 
 afile = 'facts.txt' #file saving the random facts available
 users = [] #list with all users on the channel
+user = "hana"
 
 try:
   ircsock.connect((server, 6667)) # Here we connect to the server using the port 6667
@@ -64,39 +65,40 @@ def sendmsg(msg, target):
 
 
 
-#get a list of all users in channel and return random one
-def randomuser():
-  #get a list of all users on channel
-
+#function to update the list with users on the channel
+def updateusers():
   ircsock.send(bytes("NAMES " + channel + "\r\n", "UTF-8")) #send names command to IRC server 
   
   userlist = ircsock.recv(2048).decode("UTF-8")
-  if userlist.find('NAMES') != -1:
-    print("..........")
-    
+  if userlist.find('NAMES') != -1:    
     #split usernames from string
     usernames = userlist.split(' :',1)[1].split('\n', 1)[0]
+    global users 
     users = usernames.split(' ')
-    
-    #print(*users, sep = "\n") 
-    #print("............................")
+    print("\n__________USERS_____________")
+    print(*users, sep = "\n")
+    print("____________________________\n")
+
+
+
+#return a random user on the channel
+def randomuser():
+  global users
+  randuser = random.choice(users)
+  return randuser
   
-  #return random user (item in list)
-  return random.choice(users)
-
-
+  
 
 #slap a random user in the chat
-def slapuser(msg, target=channel):
+def slapuser(target=channel):
   
   usertoslap = randomuser()
-  message = msg + usertoslap + " *****"
+  message = "***** " + usertoslap + " WAS SLAPPED BY A TROUT *****"
 
   try:
     ircsock.send(bytes("PRIVMSG "+ target +" :"+ message +"\n", "UTF-8"))
   except:
     print("ERROR: Could not slap user: " + usertoslap)
-
 
 
 
@@ -159,10 +161,9 @@ def main():
 
           #check for reqeust for fact
           if message.find('!slap') != -1:
-            slapuser("***** SLAPPED: ")
+            slapuser()
           
-          #check for a ‘code’ at the beginning of a message and parse it to do a complex task. 
-          #".tell [target] [message]” 
+          #"!tell [target] [message]” 
           if message[:5].find('!tell') != -1:
             target = message.split(' ', 1)[1]  #split the command from the rest of the message.
             if target.find(' ') != -1: #split full message incl spaces
@@ -203,6 +204,9 @@ def main():
       #if PING request respond with PONG
       if ircmsg.find("PING :") != -1:
         ping()
+
+    updateusers()
+
 
 #start program
 main()
