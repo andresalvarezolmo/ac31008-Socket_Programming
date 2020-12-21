@@ -41,3 +41,12 @@ class Channel:
                 continue
             logging.debug(f"in channel.braodcast: {c.nickname} - {c.socket}")
             c.privmsg(sender.nickname, self.name, message)
+
+    def remove_user(self, to_remove):
+        """
+        removes to_remove from this channel
+        :param to_remove:
+        :return:
+        """
+        if to_remove in self.clients:
+            self.clients.remove(to_remove)
