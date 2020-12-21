@@ -1,36 +1,38 @@
 #!/usr/bin/python3
 import socket
 import random
+import argparse
 
-#the socket we’ll be using to connect and communicate with the IRC server.
- 
+#name of the server, port and channel we’ll be connecting to
+parser = argparse.ArgumentParser(description='IRC bot parameters.')
+parser.add_argument("server", help="enter the IP address of the server you are trying to connect")
+parser.add_argument("port", help="enter the port")
+parser.add_argument("channel", help="enter the channel")
+# name of the bot
+parser.add_argument("botnick", help="botnick")
+args = parser.parse_args()
+
+#the socket we’ll be using to connect and communicate with the IRC server. 
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #to connect using ipv4 server
 # ircsock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM) #to connect using ipv6 server
-#name of the server and channel we’ll be connecting to
-server = "127.0.0.1" # Server localhost ipv4
-# server = "::1" # Server localhost ipv6
-# server = "fc00:1337::19" # Actual ipv6 Server that will be used for marking
 
-channel = "#testing" # Channel
-
-botnick = "BOT" #bot's name
 adminname = "ABC" #IRC nickname to send admin commands to the bot
-exitcode = "Bye " + botnick #text to exit
+exitcode = "Bye " + args.botnick #text to exit
 afile = 'facts.txt' #file saving thr random facts available
 users = [] #list with all users on the channel
 user = "user"
 
 try:
-  ircsock.connect((server, 6667)) # Here we connect to the server using the port 6667
+  ircsock.connect((args.server, int(args.port))) # Here we connect to the server using the port 6667
 except:
-  print("ERROR: Could not connect to server: " + server)
+  print("ERROR: Could not connect to server: " + args.server)
 
 try:
   #send some information to let the server know who we are. 
-  ircsock.send(bytes("USER "+ botnick +" "+ botnick +" "+ botnick + " " + botnick + "\n", "UTF-8")) # user information
-  ircsock.send(bytes("NICK "+ botnick +"\n", "UTF-8")) # assign the nick to the bot
+  ircsock.send(bytes("USER "+ args.botnick +" "+ args.botnick +" "+ args.botnick + " " + args.botnick + "\n", "UTF-8")) # user information
+  ircsock.send(bytes("NICK "+ args.botnick +"\n", "UTF-8")) # assign the nick to the bot
 except:
-  print("ERROR: Could not send to server: " + server)
+  print("ERROR: Could not send to server: " + args.server)
 
 # function to join a channel, pass name 
 def joinchan(chan):
@@ -69,7 +71,7 @@ def sendmsg(msg, target):
 def randomuser():
   #get a list of all users on channel
 
-  ircsock.send(bytes("NAMES " + channel + "\r\n", "UTF-8")) #send names command to IRC server 
+  ircsock.send(bytes("NAMES " + args.channel + "\r\n", "UTF-8")) #send names command to IRC server 
   
   userlist = ircsock.recv(2048).decode("UTF-8")
   if userlist.find('NAMES') != -1:
@@ -92,7 +94,7 @@ def randomuser():
 
 
 #slap a random user in the chat
-def slapuser(msg, target=channel):
+def slapuser(msg, target=args.channel):
   
   usertoslap = randomuser()
   message = msg + usertoslap + " *****"
@@ -119,7 +121,7 @@ def random_line(filename):
 #call the other functions as necessary and process the info
 def main():
   
-  joinchan(channel) #join the channel
+  joinchan(args.channel) #join the channel
 
   #infinite loop to continually check for and receive new info from server. This ensures our connection stays open. 
   while 1:
@@ -147,20 +149,20 @@ def main():
 
       if len(name) < 17: #check valid user
 
-        if origin.lower() == channel.lower():
+        if origin.lower() == args.channel.lower():
 
           #check for hello message
-          if message.find('Hi ' + botnick) != -1:
-            sendmsg("Hello " + name + "!", channel)
+          if message.find('Hi ' + args.botnick) != -1:
+            sendmsg("Hello " + name + "!", args.channel)
 
           #check for !hello message
           if message.find('!hello') != -1:
-            sendmsg("Hello " + name + "!", channel)
+            sendmsg("Hello " + name + "!", args.channel)
         
           #check for reqeust for fact
           if message.find('!fact') != -1:
             fact = random_line(afile)
-            sendmsg(fact, channel)
+            sendmsg(fact, args.channel)
 
           #check for reqeust for fact
           if message.find('!slap') != -1:
@@ -190,13 +192,13 @@ def main():
 
           #to exit bot
           if message.rstrip() == exitcode:
-            sendmsg("Oh...Okay. :'(", channel)
+            sendmsg("Oh...Okay. :'(", args.channel)
             ircsock.send(bytes("QUIT \n", "UTF-8")) #quit command to IRC server 
             return
 
         
         #if message from private channel
-        if origin.lower() == botnick.lower():
+        if origin.lower() == args.botnick.lower():
            
           #send fact after every message
           if message != -1:
