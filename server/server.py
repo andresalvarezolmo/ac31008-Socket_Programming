@@ -17,7 +17,14 @@ class Server:
         "ERR_NEEDMOREPARAMS" : (461, "{} :Not enough parameters"),
         "ERR_ALREADYREGISTRED" : (462, ":You may not reregister"),
         "RPL_LUSERCLIENT" : (251, ":There are {} users and {} services on {} servers"),
-        "ERR_NOMOTD" : (422, ":MOTD File is missing")
+        "ERR_NOMOTD" : (422, ":MOTD File is missing"),
+        "ERR_NOSUCHCHANNEL": (403, "{} :No such channel"),
+        "RPL_NOTOPIC": ("331", "{} :No topic set"),
+        "RPL_NAMREPLY": (353, "= {} :{}"),
+        "RPL_ENDOFNAMES": ("366", "{} :End of NAMES list"),
+        "RPL_WHOREPLY": (352, "{}"),
+        "ERR_NOSUCHNICK": (401, "{} :No such nick/channel")
+
     }
 
     crlf = '\n\r'
@@ -66,9 +73,7 @@ class Server:
                 else:
                     data = s.recv(1024)
                     if data:
-                        logging.debug(f"[listen] data: {data}")
                         messages = data.decode('utf-8').split('\r\n')
-                        logging.debug(f"[parse_client_message] messages: {messages}")
                         for m in messages:
                             reply = self.parse_client_message(self.clients[s], m)
                             s.sendall(reply.encode())
@@ -128,14 +133,14 @@ class Server:
         :return: the reply that should be send to the client socket
         """
 
-        logging.debug(f"[parse_client_message] parse_command={self.parse_commnd(m)}")
         if len(m) < 1:
             return ""
         command, params = self.parse_commnd(m)
 
         if command not in self.commands:
-            logging.debug(f"parse_client_message] command {command} is not in commands dictionary")
+            logging.debug(f"[parse_client_message] unknown command: {command}")
             return ""
+        logging.debug(f"[parse_client_message] params: {params}")
         reply = self.commands[command](client, params)
         return reply
 
@@ -149,7 +154,6 @@ class Server:
             return ""
 
     def user_msg(self, client, params):
-        logging.debug(f"[user_msg] params: {params}")
         if len(params) != 4:
             return self.generate_reply('ERR_NEEDMOREPARAMS', args=('USER'))
         if client.is_registered:
@@ -162,14 +166,32 @@ class Server:
 
     def join_msg(self, client, params):
         channel = params[0]
-        new_channel = Channel(channel, client)
-        self.channels.append(new_channel)
+        if channel[0] != '#':
+            return
+        if channel in self.channels:
+            self.channels[channel].join(client)
+        else:
+            new_channel = Channel(channel, client)
+            self.channels.append(new_channel)
         return f":{client.nickname} JOIN {channel}{self.crlf}"
 
     def privmsg_msg(self, client, params):
-        text = params.pop()
-        for receipient in params:
-            self.registered_clients[receipient].sendmsg(text)
+        logging.debug(f"[privmsg_msg] params: {params}")
+
+        receipient = params[0]
+        text = params[1]
+
+        if receipient[0] == '#':
+            if receipient in self.channels:
+                self.channels[receipient].braodcast(text, client)
+            else:
+                return self.generate_reply("ERR_NOSUCHNICK", args=(receipient))
+        else:
+            if receipient in self.registered_clients:
+                self.registered_clients[receipient].privmsg(client.nickname, receipient, text)
+            else:
+                return self.generate_reply("ERR_NOSUCHNICK", args=(receipient))
+
         return ""
 
     def usercount(self):

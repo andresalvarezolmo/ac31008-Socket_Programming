@@ -35,5 +35,9 @@ class Client:
         self.username, self.hostname, self.sername, self.realname = params
         return True
 
+    def privmsg(self, sender, receipient, message):
+        message = f":{sender} PRIVMSG {receipient} {message} \n\r"
+        self.socket.sendall(message.encode())
+
     def sendmsg(self, message):
         self.socket.sendall(message.encode())
