@@ -16,3 +16,19 @@ class Client:
         :return:
         """
         self.nickname = nickname
+
+    def set_realname(self, realname):
+        """
+        Sets the real name of a client.
+        :param realname: the clients real name
+        :return: void
+        """
+        self.realname = realname
+
+    def set_username(self, username):
+        """
+        Sets the user name of a client.
+        :param username: the clients user name
+        :return: void
+        """
+        self.username = username
