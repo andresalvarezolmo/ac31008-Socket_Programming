@@ -66,7 +66,7 @@ class Server:
             for s in readable:
                 if s is self.server:
                     conn, addr = s.accept()
-                    logging.debug("[server.listen] client with address {} connected".format(addr))
+                    logging.info("client connected: {}".format(addr))
                     conn.setblocking(False)
                     self.inputs.append(conn)
                     self.clients[conn] = Client(conn, addr)
@@ -80,9 +80,12 @@ class Server:
 
                     # no data received, connection is closed
                     else:
+                        logging.debug(f"removing {s} from input pool")
                         self.inputs.remove(s)
+                        for c in self.channels:
+                            c.remove_user(self.clients[s])
+                        del self.registered_clients[self.clients[s].nickname]
                         del self.clients[s]
-                        # todo remove from registered client directory
                         s.close()
 
     def generate_reply(self, replycode, client=None, sender=None, args=""):
@@ -98,7 +101,7 @@ class Server:
             nickname = client.nickname + " "
 
         if sender:
-            prefix = f"{sender.nickname}" # TODO extend to: <prefix>   ::= <servername> | <nick> [ '!' <user> ] [ '@' <host> ]
+            prefix = f"{sender.nickname}"
         else:
             prefix = ":" + socket.gethostname()
 
