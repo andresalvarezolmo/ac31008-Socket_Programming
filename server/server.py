@@ -2,6 +2,7 @@ import socket
 import select
 import logging
 from client import Client
+from channel import Channel
 
 class Server:
     """
@@ -10,8 +11,13 @@ class Server:
     """
 
     replies = {
+        "WELCOME" : ("001", ":Welcome to our IRC server"),
         "ERR_NONICKNAMEGIVEN" : (431, ":No nickname given"),
-        "ERR_NICKNAMEINUSE" : (433, "{} :Nickname is already in use")
+        "ERR_NICKNAMEINUSE" : (433, "{} :Nickname is already in use"),
+        "ERR_NEEDMOREPARAMS" : (461, "{} :Not enough parameters"),
+        "ERR_ALREADYREGISTRED" : (462, ":You may not reregister"),
+        "RPL_LUSERCLIENT" : (251, ":There are {} users and {} services on {} servers"),
+        "ERR_NOMOTD" : (422, ":MOTD File is missing")
     }
 
     crlf = '\n\r'
@@ -23,7 +29,9 @@ class Server:
         self.inputs = [self.server]
         self.outputs = [] # not used
         self.errors = []
-        self.clients = {}
+        self.clients = {} # maps client sockets to client objects
+        self.registered_clients = {} # maps a nickname to a client object
+        self.channels = []
         self.commands = {
             "NICK": self.nick_msg,
             "USER": self.user_msg,
@@ -49,20 +57,21 @@ class Server:
         while self.inputs:
             readable, writeable, exceptional = select.select(self.inputs, self.outputs, self.errors)
             for s in readable:
-                # handle new connections
                 if s is self.server:
                     conn, addr = s.accept()
                     logging.debug("[server.listen] client with address {} connected".format(addr))
                     conn.setblocking(False)
                     self.inputs.append(conn)
                     self.clients[conn] = Client(conn, addr)
-                # handle existing clients
                 else:
                     data = s.recv(1024)
                     if data:
                         logging.debug(f"[listen] data: {data}")
-                        reply = self.parse_client_message(client=self.clients[s], message=data.decode('utf-8'))
-                        s.sendall(reply.encode())
+                        messages = data.decode('utf-8').split('\r\n')
+                        logging.debug(f"[parse_client_message] messages: {messages}")
+                        for m in messages:
+                            reply = self.parse_client_message(self.clients[s], m)
+                            s.sendall(reply.encode())
 
                     # no data received, connection is closed
                     else:
@@ -70,24 +79,24 @@ class Server:
                         del self.clients[s]
                         s.close()
 
-    def get_prefix(self, client):
-        """
-        assembles an IRC prefix for a server-side reply message based on the given client object
-        :return: prefix
-        """
-        # TODO make the prefix generation dynamic, maybe move and rename function
-        return ':bjarne-lt'
-
-
-    def generate_reply(self, client, replycode, args=""):
+    def generate_reply(self, replycode,client=None, sender=None, args=""):
         """
         generates a server reply message based on the provided reply code
         :param replycode: the statuscode of the previous action
         :return: a reply message
         """
         msg = self.replies[replycode][1].format(*args)
-        r = f"{self.replies[replycode][0]} {msg}"
-        return f"{self.get_prefix(client)} {r} {Server.crlf}"
+        code = self.replies[replycode][0]
+        nickname = ''
+        if client and client.has_nick:
+            nickname = client.nickname + " "
+
+        if sender:
+            prefix = f"{sender.nickname}" # TODO extend to: <prefix>   ::= <servername> | <nick> [ '!' <user> ] [ '@' <host> ]
+        else:
+            prefix = ":bjarne-lt" # TODO make dynamic
+
+        return f"{prefix} {code} {nickname}{msg} {Server.crlf}"
 
     def parse_commnd(self, m):
         """
@@ -99,52 +108,75 @@ class Server:
         if m:
             w = m.find(' ')
             if w < 0:
-                return m.upper(), "", ""
+                return m.upper(), ""
             command = m[0:w].upper()
             column = m.find(':')
-            text = ''
             if column > 0:
-                logging.debug('c')
                 text = m[column:]
                 params = m[w:column].split()
+                params.append(text)
             else:
                 params = m[w:].split()
-            return command, params, text
+            return command, params
         return ""
 
-    def parse_client_message(self, client, message):
+    def parse_client_message(self, client, m):
         """
         takes an IRC message string send by client and performs the requested action based on the message
         :param client: the client object that corresponds to the sending connection socket (in the client directory)
         :param message: the message that was send, as a string
         :return: the reply that should be send to the client socket
         """
-        messages = message.split('\r\n')
-        logging.debug(f"[parse_client_message] messages: {messages}")
-        for m in messages:
-            logging.debug(f"[parse_client_message] parse_command={self.parse_commnd(m)}")
-            if len(m) < 1:
-                return ""
-            command, params, text = self.parse_commnd(m)
 
-            if command not in self.commands:
-                logging.debug(f"parse_client_message] command {command} is not in commands dictionary")
-                return ""
-            reply = self.commands[command](client, params)
-            return reply
+        logging.debug(f"[parse_client_message] parse_command={self.parse_commnd(m)}")
+        if len(m) < 1:
+            return ""
+        command, params = self.parse_commnd(m)
+
+        if command not in self.commands:
+            logging.debug(f"parse_client_message] command {command} is not in commands dictionary")
+            return ""
+        reply = self.commands[command](client, params)
+        return reply
 
     def nick_msg(self, client, params):
         if not params:
-            return self.generate_reply(client, 'ERR_NONICKNAMEGIVEN')
+            return self.generate_reply('ERR_NONICKNAMEGIVEN')
         else:
             client.set_nick(params[0])
+            if client.is_registered:
+                self.welcome(client)
             return ""
 
-    def user_msg(self, client, username, hostname, servername, realname):
-        pass
+    def user_msg(self, client, params):
+        logging.debug(f"[user_msg] params: {params}")
+        if len(params) != 4:
+            return self.generate_reply('ERR_NEEDMOREPARAMS', args=('USER'))
+        if client.is_registered:
+            return self.generate_reply('ERR_ALREADYREGISTRED')
 
-    def join_msg(self, channel):
-        pass
+        client.register(params)
+        if client.is_registered:
+            self.welcome(client)
+        return ""
 
-    def privmsg_msg(self, params):
-        pass
+    def join_msg(self, client, params):
+        channel = params[0]
+        new_channel = Channel(channel, client)
+        self.channels.append(new_channel)
+        return f":{client.nickname} JOIN {channel}{self.crlf}"
+
+    def privmsg_msg(self, client, params):
+        text = params.pop()
+        for receipient in params:
+            self.registered_clients[receipient].sendmsg(text)
+        return ""
+
+    def usercount(self):
+        return len(self.registered_clients)
+
+    def welcome(self, client):
+        self.registered_clients[client.nickname] = client
+        client.sendmsg(self.generate_reply("WELCOME", client=client))
+        client.sendmsg(self.generate_reply("RPL_LUSERCLIENT",client=client, args=(self.usercount(),0,1)))
+        client.sendmsg(self.generate_reply("ERR_NOMOTD", client=client))
