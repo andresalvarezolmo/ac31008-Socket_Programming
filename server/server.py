@@ -173,6 +173,12 @@ class Server:
         else:
             new_channel = Channel(channel, client)
             self.channels.append(new_channel)
+#        client.sendmsg(self.generate_reply("RPL_NAMREPLY"), args=self.channels[channel].clients)
+#         :bjarne-lt 331 gido #channi :No topic is set
+# :bjarne-lt 353 gido = #channi :gido horst2
+# :bjarne-lt 366 gido #channi :End of NAMES list
+#
+# "all: :gido!gido@127.0.0.1 JOIN #channi"
         return f":{client.nickname} JOIN {channel}{self.crlf}"
 
     def privmsg_msg(self, client, params):

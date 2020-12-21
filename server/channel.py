@@ -12,10 +12,6 @@ class Channel:
     def join(self, client):
         self.clients.append(client)
 
-    def clients(self):
-        clients = [c + " " for c in self.clients.nickname]
-        return clients
-
     def braodcast(self, message, sender=None):
         """
         braodcast a message to every client socket in the channel, except to the sending socking
