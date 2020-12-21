@@ -26,7 +26,7 @@ class Server:
         "ERR_NOSUCHNICK": (401, "{} :No such nick/channel")
 
     }
-    crlf = '\n\r'
+    crlf = '\r\n'
 
     def __init__(self):
         self.server = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
@@ -37,13 +37,14 @@ class Server:
         self.errors = []
         self.clients = {} # maps client sockets to client objects
         self.registered_clients = {} # maps a nickname to a client object
-        self.channels = {}
+        self.channels = {} # maps a channel name to a Channel object
         self.commands = {
             "NICK": self.nick_msg,
             "USER": self.user_msg,
             "JOIN" : self.join_msg,
             "PRIVMSG" : self.privmsg_msg,
-            "PING" : self.ping_msg
+            "PING" : self.ping_msg,
+            "NAMES" : self.names_msg
         }
 
     def connect(self, host, port=2020):
@@ -73,6 +74,7 @@ class Server:
                 else:
                     data = s.recv(1024)
                     if data:
+                        print(data)
                         messages = data.decode('utf-8').split('\r\n')
                         for m in messages:
                             reply = self.parse_client_message(self.clients[s], m)
@@ -83,8 +85,10 @@ class Server:
                         logging.debug(f"removing {s} from input pool")
                         self.inputs.remove(s)
                         for c in self.channels:
-                            c.remove_user(self.clients[s])
-                        del self.registered_clients[self.clients[s].nickname]
+                            self.channels[c].remove_user(self.clients[s])
+                        client = self.clients[s]
+                        if client.nickname in self.registered_clients:
+                            self.registered_clients.pop(client.nickname)
                         del self.clients[s]
                         s.close()
 
@@ -178,14 +182,13 @@ class Server:
             new_channel = Channel(channel_name, client)
             self.channels[channel_name] = new_channel
 
+        self.channels[channel_name].notify_join(client)
+        client.sendmsg(f":{socket.gethostname()} 331 {client.nickname} {channel_name} :No topic set{self.crlf}")
+        client.sendmsg(f":{socket.gethostname()} 353 {client.nickname} = {channel_name} :{self.channels[channel_name].client_str()}{self.crlf}")
+        client.sendmsg(f":{socket.gethostname()} 366 {client.nickname} {channel_name} :End of NAMES list{self.crlf}")
 
-        client.sendmsg(f"{socket.gethostname()} 331 {client.nickname} {channel_name} :No topic set{self.crlf}")
-        client.sendmsg(f"{socket.gethostname()} 353 {client.nickname} = {channel_name} :{self.channels[channel_name].client_str()}{self.crlf}")
-        client.sendmsg(f"{socket.gethostname()} 366 {client.nickname} {channel_name} :End of Names list{self.crlf}")
-        # self.channels[channel_name].braodcast(f":{client.nickname} JOIN {channel_name}", client)
 
-
-        return f":{client.nickname} JOIN {channel_name}{self.crlf}"
+        return ""
 
     def privmsg_msg(self, client, params):
         logging.debug(f"[privmsg_msg] params: {params}")
@@ -195,12 +198,12 @@ class Server:
 
         if receipient[0] == '#':
             if receipient in self.channels:
-                self.channels[receipient].braodcast(text, client)
+                self.channels[receipient].broadcast(text, client)
             else:
                 return self.generate_reply("ERR_NOSUCHNICK", args=(receipient))
         else:
             if receipient in self.registered_clients:
-                self.registered_clients[receipient].privmsg(client.nickname, receipient, text)
+                self.registered_clients[receipient].privmsg(client, receipient, text)
             else:
                 return self.generate_reply("ERR_NOSUCHNICK", args=(receipient))
 
@@ -209,6 +212,12 @@ class Server:
     def ping_msg(self, client, params):
         return f"PONG{self.crlf}"
 
+    def names_msg(self, client, params):
+        channel_name = params[0]
+        if channel_name in self.channels:
+            client.sendmsg(f":{socket.gethostname()} 353 {client.nickname} = {channel_name} :{self.channels[channel_name].client_str()}{self.crlf}")
+        client.sendmsg(f":{socket.gethostname()} 366 {client.nickname} {channel_name} :End of NAMES list{self.crlf}")
+        return ""
 
     def usercount(self):
         return len(self.registered_clients)

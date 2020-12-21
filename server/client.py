@@ -36,7 +36,7 @@ class Client:
         return True
 
     def privmsg(self, sender, receipient, message):
-        message = f":{sender} PRIVMSG {receipient} {message} \n\r"
+        message = f":{sender.nickname}!{sender.username}@127.0.0.1 PRIVMSG {receipient} {message} \n\r"
         self.socket.sendall(message.encode())
 
     def sendmsg(self, message):

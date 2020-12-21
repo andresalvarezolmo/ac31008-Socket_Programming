@@ -19,6 +19,15 @@ class Channel:
         if client not in self.clients:
             self.clients.append(client)
 
+    def notify_join(self, client):
+        """
+        notify every client in the channel that <client> joined the channel
+        :param client: client that joined the channel
+        :return: void
+        """
+        for c in self.clients:
+            c.sendmsg(f":{client.nickname}!{client.username}@127.0.0.1 JOIN {self.name}\n\r")
+
     def client_str(self):
         """
         return a whitespace separated list of all clients that are in a specific channel
@@ -29,7 +38,7 @@ class Channel:
             clients += c.nickname + " "
         return clients
 
-    def braodcast(self, message, sender):
+    def broadcast(self, message, sender):
         """
         braodcast a message to every client socket in the channel, except to the sending socking
         :param message: the message that should be broadcasted
@@ -40,7 +49,7 @@ class Channel:
             if c is sender:
                 continue
             logging.debug(f"in channel.braodcast: {c.nickname} - {c.socket}")
-            c.privmsg(sender.nickname, self.name, message)
+            c.privmsg(sender, self.name, message)
 
     def remove_user(self, to_remove):
         """
@@ -50,3 +59,4 @@ class Channel:
         """
         if to_remove in self.clients:
             self.clients.remove(to_remove)
+            logging.debug(f"in channel.remove_user: removed socket {to_remove} from channel")

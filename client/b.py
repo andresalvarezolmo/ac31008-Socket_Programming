@@ -152,12 +152,14 @@ def main():
   
   joinchan(channel) #join the channel
 
+  import time
   #continually check for and receive new info from server
   while 1:
+    time.sleep(1)
     try:
       ircmsg = ircsock.recv(2048).decode("UTF-8")
-    except:
-      print("ERROR: IRC server problem!")
+    except Exception as e:
+      print("ERROR: IRC server problem! {}".format(e))
       quit()
     
     ircmsg = ircmsg.strip('\n\r')
