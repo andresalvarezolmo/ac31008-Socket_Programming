@@ -42,7 +42,8 @@ class Server:
             "NICK": self.nick_msg,
             "USER": self.user_msg,
             "JOIN" : self.join_msg,
-            "PRIVMSG" : self.privmsg_msg
+            "PRIVMSG" : self.privmsg_msg,
+            "PING" : self.ping_msg
         }
 
     def connect(self, host, port=2020):
@@ -99,7 +100,7 @@ class Server:
         if sender:
             prefix = f"{sender.nickname}" # TODO extend to: <prefix>   ::= <servername> | <nick> [ '!' <user> ] [ '@' <host> ]
         else:
-            prefix = ":bjarne-lt" # TODO make dynamic
+            prefix = ":" + socket.gethostname()
 
         return f"{prefix} {code} {nickname}{msg} {Server.crlf}"
 
@@ -175,14 +176,12 @@ class Server:
             self.channels[channel_name] = new_channel
 
 
-        client.sendmsg(f"bjarne-lt 331 {client.nickname} {channel_name} :No topic set{self.crlf}")
-        client.sendmsg(f"bjarne-lt 353 {client.nickname} = {channel_name} :{self.channels[channel_name].client_str()}{self.crlf}")
-        client.sendmsg(f"bjarne-lt 366 {client.nickname} {channel_name} :End of Names list{self.crlf}")
-#         :bjarne-lt 331 gido #channi :No topic is set
-# :bjarne-lt 353 gido = #channi :gido horst2
-# :bjarne-lt 366 gido #channi :End of NAMES list
-#
-# "all: :gido!gido@127.0.0.1 JOIN #channi"
+        client.sendmsg(f"{socket.gethostname()} 331 {client.nickname} {channel_name} :No topic set{self.crlf}")
+        client.sendmsg(f"{socket.gethostname()} 353 {client.nickname} = {channel_name} :{self.channels[channel_name].client_str()}{self.crlf}")
+        client.sendmsg(f"{socket.gethostname()} 366 {client.nickname} {channel_name} :End of Names list{self.crlf}")
+        # self.channels[channel_name].braodcast(f":{client.nickname} JOIN {channel_name}", client)
+
+
         return f":{client.nickname} JOIN {channel_name}{self.crlf}"
 
     def privmsg_msg(self, client, params):
@@ -203,6 +202,10 @@ class Server:
                 return self.generate_reply("ERR_NOSUCHNICK", args=(receipient))
 
         return ""
+
+    def ping_msg(self, client, params):
+        return f"PONG{self.crlf}"
+
 
     def usercount(self):
         return len(self.registered_clients)
