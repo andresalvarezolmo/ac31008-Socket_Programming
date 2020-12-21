@@ -12,7 +12,11 @@ class Channel:
     def join(self, client):
         self.clients.append(client)
 
-    def braodcast(self, message, sender=None):
+    def client_str(self):
+        clients = [c.nickname + " " for c in self.clients]
+        return clients
+
+    def braodcast(self, message, sender):
         """
         braodcast a message to every client socket in the channel, except to the sending socking
         :param message: the message that should be broadcasted
@@ -22,4 +26,4 @@ class Channel:
         for c in self.clients:
             if c is sender:
                 continue
-            c.sendmsg(message)
+            c.privmsg(sender.nickname, self.name, message)

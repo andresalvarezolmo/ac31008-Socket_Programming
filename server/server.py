@@ -26,7 +26,6 @@ class Server:
         "ERR_NOSUCHNICK": (401, "{} :No such nick/channel")
 
     }
-
     crlf = '\n\r'
 
     def __init__(self):
@@ -38,7 +37,7 @@ class Server:
         self.errors = []
         self.clients = {} # maps client sockets to client objects
         self.registered_clients = {} # maps a nickname to a client object
-        self.channels = []
+        self.channels = {}
         self.commands = {
             "NICK": self.nick_msg,
             "USER": self.user_msg,
@@ -82,9 +81,10 @@ class Server:
                     else:
                         self.inputs.remove(s)
                         del self.clients[s]
+                        # todo remove from registered client directory
                         s.close()
 
-    def generate_reply(self, replycode,client=None, sender=None, args=""):
+    def generate_reply(self, replycode, client=None, sender=None, args=""):
         """
         generates a server reply message based on the provided reply code
         :param replycode: the statuscode of the previous action
@@ -165,21 +165,25 @@ class Server:
         return ""
 
     def join_msg(self, client, params):
-        channel = params[0]
-        if channel[0] != '#':
+        channel_name = params[0]
+        if channel_name[0] != '#':
             return
-        if channel in self.channels:
-            self.channels[channel].join(client)
+        if channel_name in self.channels:
+            self.channels[channel_name].join(client)
         else:
-            new_channel = Channel(channel, client)
-            self.channels.append(new_channel)
-#        client.sendmsg(self.generate_reply("RPL_NAMREPLY"), args=self.channels[channel].clients)
+            new_channel = Channel(channel_name, client)
+            self.channels[channel_name] = new_channel
+
+
+        client.sendmsg(f"bjarne-lt 331 {client.nickname} {channel_name} :No topic set{self.crlf}")
+        client.sendmsg(f"bjarne-lt 353 {client.nickname} = {channel_name} :{self.channels[channel_name].client_str()}{self.crlf}")
+        client.sendmsg(f"bjarne-lt 366 {client.nickname} {channel_name} :End of Names list{self.crlf}")
 #         :bjarne-lt 331 gido #channi :No topic is set
 # :bjarne-lt 353 gido = #channi :gido horst2
 # :bjarne-lt 366 gido #channi :End of NAMES list
 #
 # "all: :gido!gido@127.0.0.1 JOIN #channi"
-        return f":{client.nickname} JOIN {channel}{self.crlf}"
+        return f":{client.nickname} JOIN {channel_name}{self.crlf}"
 
     def privmsg_msg(self, client, params):
         logging.debug(f"[privmsg_msg] params: {params}")
