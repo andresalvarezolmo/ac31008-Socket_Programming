@@ -136,6 +136,7 @@ def random_line(filename):
 
 
 def erromessage():
+  print("error")
   #TODO
   # 401 - no such nick
   # 402 - no such server
@@ -149,7 +150,7 @@ def erromessage():
 #call the other functions as necessary and process the info
 def main():
   
-  joinchan(args.channel) #join the channel
+  joinchan(channel) #join the channel
 
   #continually check for and receive new info from server
   while 1:
