@@ -173,20 +173,20 @@ def main():
 
       if len(name) < 17: #check valid user
 
-        if origin.lower() == args.channel.lower():
+        if origin.lower() == channel.lower():
 
           #check for hello message
-          if message.find('Hi ' + args.botnick) != -1:
-            sendmsg("Hello " + name + "!", args.channel)
+          if message.find('Hi ' + botnick) != -1:
+            sendmsg("Hello " + name + "!", channel)
 
           #check for !hello message
           if message.find('!hello') != -1:
-            sendmsg("Hello " + name + "!", args.channel)
+            sendmsg("Hello " + name + "!", channel)
         
           #check for reqeust for fact
           if message.find('!fact') != -1:
             fact = random_line(afile)
-            sendmsg(fact, args.channel)
+            sendmsg(fact, channel)
 
           #check for reqeust for slap
           if message.find('!slap') != -1:
@@ -209,13 +209,13 @@ def main():
 
           #to exit bot
           if message.rstrip() == exitcode:
-            sendmsg("Oh...Okay. :'(", args.channel)
+            sendmsg("Oh...Okay. :'(", channel)
             ircsock.send(bytes("QUIT \n", "UTF-8")) #quit command to IRC server 
             return
 
         
         #if message from private channel
-        if origin.lower() == args.botnick.lower():
+        if origin.lower() == botnick.lower():
            
           #send fact after every message
           if message != -1:
