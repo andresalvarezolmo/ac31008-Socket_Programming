@@ -1,0 +1,15 @@
+comment on 4 items that are incomplete to recover some marks. 
+
+single page 
+for each chosen item the problem must be briefly explained (what is happening compared to the expected result) with 
+appropriate references to the protocol and a possible solution (why this is happening and how it could be prevented). 
+
+At least half of the issues must be related to network and the protocol, 
+i.e. they should not be purely coding related.
+
+The other half can be coding related (bugs, ... ) but should be put in perspective 
+of networks and the protocol.
+
+instead explain how you would extend your implementation to achieve additional features 
+appropriate references to the protocol are expected and the comments
+should focus more on the network viewpoint than coding.
