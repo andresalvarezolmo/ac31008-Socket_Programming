@@ -18,6 +18,10 @@ class Channel:
         """
         if client not in self.clients:
             self.clients.append(client)
+            for c in self.clients:
+                if c is client:
+                    continue
+                c.sendmsg(f":{client.nickname} JOIN {self.name}\n\r")
 
     def client_str(self):
         """
@@ -29,7 +33,7 @@ class Channel:
             clients += c.nickname + " "
         return clients
 
-    def braodcast(self, message, sender):
+    def broadcast(self, message, sender):
         """
         braodcast a message to every client socket in the channel, except to the sending socking
         :param message: the message that should be broadcasted
@@ -50,3 +54,4 @@ class Channel:
         """
         if to_remove in self.clients:
             self.clients.remove(to_remove)
+            logging.debug(f"in channel.remove_user: removed socket {to_remove} from channel")
