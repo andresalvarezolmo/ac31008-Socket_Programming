@@ -182,7 +182,7 @@ class Server:
             new_channel = Channel(channel_name, client)
             self.channels[channel_name] = new_channel
 
-
+        self.channels[channel_name].notify_join(client)
         client.sendmsg(f":{socket.gethostname()} 331 {client.nickname} {channel_name} :No topic set{self.crlf}")
         client.sendmsg(f":{socket.gethostname()} 353 {client.nickname} = {channel_name} :{self.channels[channel_name].client_str()}{self.crlf}")
         client.sendmsg(f":{socket.gethostname()} 366 {client.nickname} {channel_name} :End of NAMES list{self.crlf}")

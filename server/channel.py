@@ -18,8 +18,15 @@ class Channel:
         """
         if client not in self.clients:
             self.clients.append(client)
-            for c in self.clients:
-                c.sendmsg(f":{client.nickname}!{client.username}@127.0.0.1 JOIN {self.name}\n\r")
+
+    def notify_join(self, client):
+        """
+        notify every client in the channel that <client> joined the channel
+        :param client: client that joined the channel
+        :return: void
+        """
+        for c in self.clients:
+            c.sendmsg(f":{client.nickname}!{client.username}@127.0.0.1 JOIN {self.name}\n\r")
 
     def client_str(self):
         """
