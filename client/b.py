@@ -13,12 +13,11 @@ server = "127.0.0.1" # Server localhost ipv4
 
 channel = "#testing" # Channel
 
-botnick = "BOT" #bot's name
+botnick = "BOT" 
 adminname = "ABC" #IRC nickname to send admin commands to the bot
-exitcode = "Bye " + botnick #text to exit
-afile = 'facts.txt' #file saving thr random facts available
+exitcode = "Bye " + botnick 
+afile = 'facts.txt' #file saving the random facts available
 users = [] #list with all users on the channel
-user = "user"
 
 try:
   ircsock.connect((server, 6667)) # Here we connect to the server using the port 6667
@@ -27,8 +26,8 @@ except:
 
 try:
   #send some information to let the server know who we are. 
-  ircsock.send(bytes("USER "+ botnick +" "+ botnick +" "+ botnick + " " + botnick + "\n", "UTF-8")) # user information
-  ircsock.send(bytes("NICK "+ botnick +"\n", "UTF-8")) # assign the nick to the bot
+  ircsock.send(bytes("USER "+ botnick +" "+ botnick +" "+ botnick + " " + botnick + "\r\n", "UTF-8")) # user information
+  ircsock.send(bytes("NICK "+ botnick +"\r\n", "UTF-8")) # assign the nick to the bot
 except:
   print("ERROR: Could not send to server: " + server)
 
@@ -36,7 +35,7 @@ except:
 def joinchan(chan):
   #send the message to IRC as UTF-8 encoded bytes
   try:
-    ircsock.send(bytes("JOIN "+ chan +"\n", "UTF-8")) 
+    ircsock.send(bytes("JOIN "+ chan +"\r\n", "UTF-8")) 
   except:
     print("ERROR: Could not join channel: " + chan)
 
@@ -50,7 +49,7 @@ def joinchan(chan):
 #respond with "PONG :pingis" to any PING 
 def ping():
   try:
-    ircsock.send(bytes("PONG :pingis\n", "UTF-8"))
+    ircsock.send(bytes("PONG :pingis\r\n", "UTF-8"))
   except:
     print("ERROR: Could not send pong!")
 
@@ -59,7 +58,7 @@ def ping():
 #send message to target 
 def sendmsg(msg, target):
   try:
-    ircsock.send(bytes("PRIVMSG "+ target +" :"+ msg +"\n", "UTF-8"))
+    ircsock.send(bytes("PRIVMSG "+ target +" :"+ msg +"\r\n", "UTF-8"))
   except:
     print("ERROR: Could not send message to: " + target)
 
@@ -75,19 +74,15 @@ def randomuser():
   if userlist.find('NAMES') != -1:
     print("..........")
     
-    #TODO
-    #split from string 
-    #save items in list
-  
-  
-  
-  print("------------------")
-  print("userlist: " + userlist)
+    #split usernames from string
+    usernames = userlist.split(' :',1)[1].split('\n', 1)[0]
+    users = usernames.split(' ')
+    
+    #print(*users, sep = "\n") 
+    #print("............................")
   
   #return random user (item in list)
-  #
-  
-  return user
+  return random.choice(users)
 
 
 
