@@ -24,7 +24,6 @@ class Server:
         "RPL_ENDOFNAMES": ("366", "{} :End of NAMES list"),
         "RPL_WHOREPLY": (352, "{}"),
         "ERR_NOSUCHNICK": (401, "{} :No such nick/channel")
-
     }
     crlf = '\r\n'
 
@@ -47,11 +46,12 @@ class Server:
             "NAMES" : self.names_msg
         }
 
-    def connect(self, host, port=2020):
+    def connect(self, host=socket.gethostname(), port=2010):
         """
-        binds the server socket so that it is ready to receive connections
+        binds the server socket so that it is ready to receive connections.
+        Intended to be called before listen()
         :param host: the hostname, defaults to socket.gethostname()
-        :param port: the port that the server should listen on, default is 2020
+        :param port: the port that the server should listen on, default is 2010
         :return: void
         """
         self.server.bind((host, port))
@@ -59,11 +59,13 @@ class Server:
 
     def listen(self):
         """
-        Event handler that listens for incoming messages from client sockets
+        Event handler that listens for incoming messages from client sockets and then performs actions based
+        on incoming messages.
+        Intended to be called after connect()
         :return: void
         """
         while self.inputs:
-            readable, writeable, exceptional = select.select(self.inputs, self.outputs, self.errors)
+            readable, _, exceptional = select.select(self.inputs, (), self.errors)
             for s in readable:
                 if s is self.server:
                     conn, addr = s.accept()
@@ -79,8 +81,6 @@ class Server:
                         for m in messages:
                             reply = self.parse_client_message(self.clients[s], m)
                             s.sendall(reply.encode())
-
-                    # no data received, connection is closed
                     else:
                         logging.debug(f"removing {s} from input pool")
                         self.inputs.remove(s)
@@ -94,8 +94,9 @@ class Server:
 
     def generate_reply(self, replycode, client=None, sender=None, args=""):
         """
-        generates a server reply message based on the provided reply code
-        :param replycode: the statuscode of the previous action
+        generates a server reply message based on the provided reply code.
+        The reply message has the form <prefix> <numberical code> <nickname> <message>
+        :param replycode: the statuscode
         :return: a reply message
         """
         msg = self.replies[replycode][1].format(*args)
@@ -113,10 +114,10 @@ class Server:
 
     def parse_commnd(self, m):
         """
-        takes in a command string as send from a client and returns a tuple containing the command, the parameters as a
-        tuple and the text
-        :param command: command given
-        :return: a tuple containing the command, the parameters and the text
+        takes in a command string and returns a tuple containing the command and all parameters in a separate tuble.
+        The entire text after the last : will be put into the same item
+        :param command: command to be parsed
+        :return: a tuple containing the command and a tupble of parameters and text
         """
         if m:
             w = m.find(' ')
@@ -135,9 +136,12 @@ class Server:
 
     def parse_client_message(self, client, m):
         """
-        takes an IRC message string send by client and performs the requested action based on the message
+        takes an IRC message string, performs all necessary actions and returns a string that is intended to be send back
+        to the client. This does not exclude however that this function is able to send messages directly to sockets if
+        this is necessary
         :param client: the client object that corresponds to the sending connection socket (in the client directory)
-        :param message: the message that was send, as a string
+        :param message: a single message that was send. (If more than one message is received sumultaneously, the calling
+        function is responsible for splitting the string into atomic messages)
         :return: the reply that should be send to the client socket
         """
 
@@ -148,11 +152,17 @@ class Server:
         if command not in self.commands:
             logging.debug(f"[parse_client_message] unknown command: {command}")
             return ""
-        logging.debug(f"[parse_client_message] params: {params}")
         reply = self.commands[command](client, params)
         return reply
 
     def nick_msg(self, client, params):
+        """
+        sets the nickname of client to params[0].
+        :param client:
+        :param params: a tuple with the nickname as its only argument
+        :return: error message or empty string if successful
+        """
+        # TODO verify nickname vilidity (no #, no duplicates)
         if not params:
             return self.generate_reply('ERR_NONICKNAMEGIVEN')
         else:
@@ -162,6 +172,12 @@ class Server:
             return ""
 
     def user_msg(self, client, params):
+        """
+        sets the user information of the client object
+        :param client: the sending client object
+        :param params: a list containing username, hostname, sername, realname
+        :return: error message or empty string if successful
+        """
         if len(params) != 4:
             return self.generate_reply('ERR_NEEDMOREPARAMS', args=('USER'))
         if client.is_registered:
@@ -173,6 +189,12 @@ class Server:
         return ""
 
     def join_msg(self, client, params):
+        """
+        lets a client join a channel params[0]
+        :param client:  the client object that should join the channel
+        :param params: a list that contains the channel to be joined as its only item
+        :return: error message or empty string if successful
+        """
         channel_name = params[0]
         if channel_name[0] != '#':
             return
@@ -191,28 +213,44 @@ class Server:
         return ""
 
     def privmsg_msg(self, client, params):
-        logging.debug(f"[privmsg_msg] params: {params}")
-
-        receipient = params[0]
+        """
+        sends a private message (params[1]) from client to a recipient (params[0])
+        :param client: the sender
+        :param params: a list containing the recipient and the message text as its only items
+        :return: error message or empty string if successful
+        """
+        recipient = params[0]
         text = params[1]
 
-        if receipient[0] == '#':
-            if receipient in self.channels:
-                self.channels[receipient].broadcast(text, client)
+        if recipient[0] == '#':
+            if recipient in self.channels:
+                self.channels[recipient].broadcast(text, client)
             else:
-                return self.generate_reply("ERR_NOSUCHNICK", args=(receipient))
+                return self.generate_reply("ERR_NOSUCHNICK", args=(recipient))
         else:
-            if receipient in self.registered_clients:
-                self.registered_clients[receipient].privmsg(client, receipient, text)
+            if recipient in self.registered_clients:
+                self.registered_clients[recipient].privmsg(client, recipient, text)
             else:
-                return self.generate_reply("ERR_NOSUCHNICK", args=(receipient))
+                return self.generate_reply("ERR_NOSUCHNICK", args=(recipient))
 
         return ""
 
     def ping_msg(self, client, params):
+        """
+        sends a PONG message back to the client
+        :param client: the client object that made the ping request
+        :param params: PING parameters
+        :return: error message or empty string if successful
+        """
         return f":{socket.gethostname()} PONG {socket.gethostname()} :{params[0]} {self.crlf}"
 
     def names_msg(self, client, params):
+        """
+        sends a list of users that joined the channel params[0]
+        :param client: the client that made the request
+        :param params: the channel of which the usernames are requested
+        :return: error message or empty string if successful
+        """
         channel_name = params[0]
         if channel_name in self.channels:
             client.sendmsg(f":{socket.gethostname()} 353 {client.nickname} = {channel_name} :{self.channels[channel_name].client_str()}{self.crlf}")
@@ -220,9 +258,18 @@ class Server:
         return ""
 
     def usercount(self):
+        """
+        counts the number of registered users
+        :return: number of users on this server
+        """
         return len(self.registered_clients)
 
     def welcome(self, client):
+        """
+        sends a welcome message to client
+        :param client: the recipient of the welcome message
+        :return: void
+        """
         self.registered_clients[client.nickname] = client
         client.sendmsg(self.generate_reply("WELCOME", client=client))
         client.sendmsg(self.generate_reply("RPL_LUSERCLIENT",client=client, args=(self.usercount(),0,1)))

@@ -2,7 +2,7 @@ import logging
 class Channel:
     """
     Class to represent an IRC channel.
-    Provides functions to manipulate the channel
+    Provides functions to manipulate and interact with the channel
     """
 
     def __init__(self, name, creator):
@@ -14,7 +14,7 @@ class Channel:
         """
         add client to the list of joined clients
         :param client: the client to join this channel
-        :return:
+        :return: void
         """
         if client not in self.clients:
             self.clients.append(client)
@@ -30,20 +30,15 @@ class Channel:
 
     def client_str(self):
         """
-        return a whitespace separated list of all clients that are in a specific channel
+        return a whitespace separated list of all client nicknames that are in this channel
         :return:
         """
-        # clients = ""
-        # for c in self.clients:
-        #     clients += str.print(c.nickname, end=' ')
-        # return clients
-        seperator = " "
         nicknames = [c.nickname for c in self.clients]
-        return seperator.join(nicknames)
+        return " ".join(nicknames)
 
     def broadcast(self, message, sender):
         """
-        braodcast a message to every client socket in the channel, except to the sending socking
+        broadcast a message to every client socket in the channel, except to the sending socking
         :param message: the message that should be broadcasted
         :param sender: the client object that sends the message
         :return:
@@ -51,14 +46,13 @@ class Channel:
         for c in self.clients:
             if c is sender:
                 continue
-            logging.debug(f"in channel.braodcast: {c.nickname} - {c.socket}")
             c.privmsg(sender, self.name, message)
 
     def remove_user(self, to_remove):
         """
         removes to_remove from this channel
-        :param to_remove:
-        :return:
+        :param to_remove: client object that should be removed from this channel
+        :return: void
         """
         if to_remove in self.clients:
             self.clients.remove(to_remove)
