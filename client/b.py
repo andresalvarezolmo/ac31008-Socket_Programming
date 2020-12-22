@@ -4,13 +4,12 @@ import random
 import argparse
 
 #the socket to connect and communicate with the IRC server.
-ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #to connect using ipv4 server
-# ircsock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM) #to connect using ipv6 server
+# ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #to connect using ipv4 server
+ircsock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM) #to connect using ipv6 server
 
 #name of the server and channel we’ll be connecting to
-server = "127.0.0.1" # Server localhost ipv4
-# server = "::1" # Server localhost ipv6
-# server = "fc00:1337::19" # Actual ipv6 Server that will be used for marking
+# server = "127.0.0.1" # Server localhost ipv4
+server = "fc00:1337::19" # Actual ipv6 Server that will be used for marking
 port = 6667
 channel = "#testing"
 
