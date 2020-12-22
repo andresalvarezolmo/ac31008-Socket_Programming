@@ -17,7 +17,7 @@ class Client:
         """
         sets the nickname of this client
         :param nick: the clients nickname
-        :return:
+        :return: void
         """
         self.has_nick = True
         if self.has_userinfo:
@@ -25,6 +25,10 @@ class Client:
         self.nickname = nickname
 
     def register(self, params):
+        """
+        Registers a new client.
+        :return: void
+        """
         if len(params) != 4:
             return False
         if self.is_registered:
@@ -36,8 +40,20 @@ class Client:
         return True
 
     def privmsg(self, sender, receipient, message):
+        """
+        Sends private message.
+        :param sender: client sending the private message
+        :param receipient: client receiving the private message
+        :param message: message to be send
+        :return: void
+        """
         message = f":{sender.nickname}!{sender.username}@127.0.0.1 PRIVMSG {receipient} {message} \n\r"
         self.socket.sendall(message.encode())
 
     def sendmsg(self, message):
+        """
+        Sends message.
+        :param message: message to be send
+        :return: void
+        """
         self.socket.sendall(message.encode())
