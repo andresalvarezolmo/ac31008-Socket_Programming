@@ -34,6 +34,34 @@ botnick = args.botname
 
 
 
+#check replies from server for errors
+def errors(message):
+  errorcode = message.split(' ')[1]
+  
+  if errorcode == '401':
+    print("ERROR 401: No such nickname in channel!")
+    quit()
+  elif errorcode == '402':
+    print("ERROR 402: No such server")
+    quit()
+  elif errorcode == '403':
+    print("ERROR 403: No such channel")
+    quit()
+  elif errorcode == '404':
+    print("ERROR 404: Cannot send to channel")
+    quit()
+  elif errorcode == '422':
+    print("ERROR 424: File error")
+    quit()
+  elif errorcode == '433':
+    print("ERROR 433: Botname '" + botnick + "' already in use! ")
+    quit()
+  else:
+    return
+
+
+
+#connect to server
 def connect():
   global ircsock
   try:
@@ -46,6 +74,8 @@ def connect():
     #send some information to let the server know who we are. 
     ircsock.send(bytes("USER "+ botnick +" "+ botnick +" "+ botnick + " " + botnick + "\r\n", "UTF-8")) # user information
     ircsock.send(bytes("NICK "+ botnick +"\r\n", "UTF-8")) # assign the nick to the bot
+    message = ircsock.recv(2048).decode("UTF-8")
+    errors(message)
   except:
     print("ERROR: Could not send to server: " + server)
     quit()
@@ -131,9 +161,8 @@ def random_line(filename):
   try:
     lines = open(filename).read().splitlines()
   except IOError:
-    print("ERROR 424: Could not read from file: " + filename)
+    print("ERROR: Could not read from file: " + filename)
     quit()
-
   return random.choice(lines)
 
 
@@ -142,7 +171,7 @@ def random_line(filename):
 def exit():
   sendmsg("Oh...Okay. :'(", channel)
   try:
-    ircsock.send(bytes("QUIT \n", "UTF-8")) #quit command to IRC server 
+    ircsock.send(bytes("QUIT \n", "UTF-8")) #quit command to IRC server
   except:
     print("ERROR: Could not send QUIT command")
     quit()
@@ -180,10 +209,6 @@ def main():
 
         if origin.lower() == channel.lower():
 
-          #check for hello message
-          if message.find('Hi ' + botnick) != -1:
-            sendmsg("Hello " + name + "!", channel)
-
           #check for !hello message
           if message.find('!hello') != -1:
             sendmsg("Hello " + name + "!", channel)
@@ -206,7 +231,6 @@ def main():
 
             #wrong input
             else:
-              #target to the name of the user who sent the message (parsed from above)
               target = name
               message = "Message format should be ‘!tell [target] [message]’"
             
