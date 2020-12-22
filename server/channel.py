@@ -33,10 +33,13 @@ class Channel:
         return a whitespace separated list of all clients that are in a specific channel
         :return:
         """
-        clients = ""
-        for c in self.clients:
-            clients += c.nickname + " "
-        return clients
+        # clients = ""
+        # for c in self.clients:
+        #     clients += str.print(c.nickname, end=' ')
+        # return clients
+        seperator = " "
+        nicknames = [c.nickname for c in self.clients]
+        return seperator.join(nicknames)
 
     def broadcast(self, message, sender):
         """
