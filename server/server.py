@@ -210,7 +210,7 @@ class Server:
         return ""
 
     def ping_msg(self, client, params):
-        return f"PONG{self.crlf}"
+        return f":{socket.gethostname()} PONG {socket.gethostname()} :{params[0]} {self.crlf}"
 
     def names_msg(self, client, params):
         channel_name = params[0]
