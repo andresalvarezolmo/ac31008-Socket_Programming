@@ -3,13 +3,8 @@ import socket
 import random
 import argparse
 
-#the socket to connect and communicate with the IRC server.
-ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #to connect using ipv4 server
-# ircsock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM) #to connect using ipv6 server
-
-#name of the server and channel we’ll be connecting to
-server = "127.0.0.1" # Server localhost ipv4
-# server = "::1" # Server localhost ipv6
+ircsock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+server = "::1"
 # server = "fc00:1337::19" # Actual ipv6 Server that will be used for marking
 port = 6667
 channel = "#testing"
@@ -19,13 +14,11 @@ exitcode = "Bye " + botnick
 afile = 'facts.txt' #file saving the random facts available
 users = [] #list with all users on the channel
 
-
-# command line arguments
 parser = argparse.ArgumentParser(description='IRC bot parameters.')
-parser.add_argument("--hostname", help="enter the IP address of the server", required = False, default = server)
-parser.add_argument("--portnumber", type=int, help="enter the port of the server", required = False, default = port)
-parser.add_argument("--channelname", help="enter the name of the channel", required = False, default = channel)
-parser.add_argument("--botname", help="enter the name of the bot", required = False, default = botnick)
+parser.add_argument("-h", "--hostname", help="enter the IP address of the server", required = False, default = server)
+parser.add_argument("-p", "--port", type=int, help="enter the port of the server", required = False, default = port)
+parser.add_argument("-c", "--channelname", help="enter the name of the channel", required = False, default = channel)
+parser.add_argument("-b", "--botname", help="enter the name of the bot", required = False, default = botnick)
 
 args = parser.parse_args()
 server = args.hostname
@@ -35,32 +28,36 @@ botnick = args.botname
 
 
 try:
-  ircsock.connect((server, port)) # connect to server at port...
+  ircsock.connect((server, port))
 except:
   print("ERROR: Could not connect to server: " + server)
   quit()
 
 try:
-  #send some information to let the server know who we are. 
-  ircsock.send(bytes("USER "+ botnick +" "+ botnick +" "+ botnick + " " + botnick + "\r\n", "UTF-8")) # user information
-  ircsock.send(bytes("NICK "+ botnick +"\r\n", "UTF-8")) # assign the nick to the bot
+  # send some information to let the server know who we are.
+  ircsock.send(bytes("USER "+ botnick +" "+ botnick +" "+ botnick + " " + botnick + "\r\n", "UTF-8"))
+  ircsock.send(bytes("NICK "+ botnick +"\r\n", "UTF-8"))
 except:
   print("ERROR: Could not send to server: " + server)
   quit()
 
-# function to join a channel, pass name 
+
 def joinchan(chan):
-  #send the message to IRC as UTF-8 encoded bytes
+  """
+  function to join a channel, pass name
+  :param chan: channel to be joined
+  :return:
+  """
   try:
     ircsock.send(bytes("JOIN "+ chan +"\r\n", "UTF-8")) 
   except:
     print("ERROR: Could not join channel: " + chan)
     quit()
-  
-  
 
-#respond with "PONG :pingis" to any PING 
 def pong():
+  """
+  respond with "PONG :pingis" to any PING
+  """
   try:
     ircsock.send(bytes("PONG :pingis\r\n", "UTF-8"))
   except:
@@ -71,18 +68,22 @@ def pong():
 
 
 
-#send message to target 
 def sendmsg(msg, target):
+  """
+  send message to target
+  :param msg: the message that should be send
+  :param target: the target, either a nick or channel name
+  """
   try:
     ircsock.send(bytes("PRIVMSG "+ target +" :"+ msg +"\r\n", "UTF-8"))
   except:
     print("ERROR 404: Could not send message to: " + target)
     quit()
 
-
-
-#function to update the list with users on the channel
 def updateusers():
+  """
+  function to update the list with users on the channel
+  """
   ircsock.send(bytes("NAMES " + channel + "\r\n", "UTF-8")) #send names command to IRC server   
   
   try:
@@ -91,8 +92,7 @@ def updateusers():
     print("ERROR: ")
     quit()
   
-  if userlist.find('NAMES') != -1:    
-    #split usernames from string
+  if userlist.find('NAMES') != -1:
     usernames = userlist.split(' :',1)[1].split('\n', 1)[0]
     global users 
     users = usernames.split(' ')
@@ -100,18 +100,21 @@ def updateusers():
     print(*users, sep = "\n")
     print("____________________________\n")
 
-
-
-#return a random user on the channel
 def randomuser():
+  """
+  #return a random user on the channel
+  :return: a random user
+  """
   global users
   randuser = random.choice(users)
   return randuser
-  
-  
 
-#slap a random user in the chat
 def slapuser(target=channel):
+  """
+  slap a random user in the chat
+  :param target: the channel in which the user should be slapped
+  :return:
+  """
   usertoslap = randomuser()
   message = "***** " + usertoslap + " WAS SLAPPED BY A TROUT *****"
 
@@ -121,10 +124,12 @@ def slapuser(target=channel):
     print("ERROR: Could not slap user: " + usertoslap)
     quit()
 
-
-
-#read random line from file
 def random_line(filename):
+  """
+  read a random fact from the factsfile.
+  :param filename: the factsfile
+  :return: a random fact from the facts file
+  """
   try:
     lines = open(filename).read().splitlines()
   except IOError:
@@ -136,21 +141,17 @@ def random_line(filename):
 
 
 def erromessage():
+  """
+  print an error
+  """
   print("error")
-  #TODO
-  # 401 - no such nick
-  # 402 - no such server
-  # 403 - no such channel
-  # 404 - cannot send to channel
-  # 421 - unknown command
-  # 424 - file error
 
-
-
-#call the other functions as necessary and process the info
 def main():
+  """
+  call the other functions as necessary and process the info
+  """
   
-  joinchan(channel) #join the channel
+  joinchan(channel)
 
   import time
   #continually check for and receive new info from server
@@ -167,8 +168,7 @@ def main():
 
     #check if the information we received was standard messages in the channel 
     if ircmsg.find("PRIVMSG") != -1:
-     
-      #IRC in the format of ":[Nick]!~[hostname]@[IP Address] PRIVMSG [channel] :[message]”
+
       name = ircmsg.split('!',1)[0][1:]
       message = ircmsg.split('PRIVMSG',1)[1].split(':',1)[1]
       origin = ircmsg.split('PRIVMSG ',1)[1].split(' ', 1)[0]
@@ -212,10 +212,9 @@ def main():
           #to exit bot
           if message.rstrip() == exitcode:
             sendmsg("Oh...Okay. :'(", channel)
-            ircsock.send(bytes("QUIT \n", "UTF-8")) #quit command to IRC server 
+            ircsock.send(bytes("QUIT \n", "UTF-8"))
             return
 
-        
         #if message from private channel
         if origin.lower() == botnick.lower():
            
@@ -224,15 +223,12 @@ def main():
             fact = random_line(afile)
             sendmsg(fact, name)
 
-
-    #if message not a PRIVMSG
     else:
-      #if PING request respond with PONG
       if ircmsg.find("PING :") != -1:
         pong()
 
     updateusers()
 
 
-#start program
-main()
+if __name__ == "__main__":
+  main()
