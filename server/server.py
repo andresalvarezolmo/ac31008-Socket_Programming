@@ -76,11 +76,13 @@ class Server:
                 else:
                     data = s.recv(1024)
                     if data:
-                        print(data)
-                        messages = data.decode('utf-8').split('\r\n')
-                        for m in messages:
-                            reply = self.parse_client_message(self.clients[s], m)
-                            s.sendall(reply.encode())
+                        try:
+                            messages = data.decode('utf-8').split('\r\n')
+                            for m in messages:
+                                reply = self.parse_client_message(self.clients[s], m)
+                                s.sendall(reply.encode())
+                        except UnicodeDecodeError as e:
+                            logging.debug("UnicodeDecodeError: cannot decode {}, {}".format(data, e))
                     else:
                         logging.debug(f"removing {s} from input pool")
                         self.inputs.remove(s)
