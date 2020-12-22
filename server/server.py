@@ -152,6 +152,8 @@ class Server:
         if command not in self.commands:
             logging.debug(f"[parse_client_message] unknown command: {command}")
             return ""
+        if not client.is_registered and command not in ("USER", "NICK"):
+            return ""
         reply = self.commands[command](client, params)
         return reply
 
