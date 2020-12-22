@@ -14,7 +14,7 @@ server = "127.0.0.1" # Server localhost ipv4
 port = 6667
 channel = "#testing"
 
-botnick = "BOT1" 
+botnick = "BOT" 
 exitcode = "Bye " + botnick 
 afile = 'facts.txt' #file saving the random facts available
 users = [] #list with all users on the channel
@@ -37,9 +37,7 @@ botnick = args.botname
 
 #check replies from server for errors
 def errors(message):
-  errorcode = message.split(' ')[1] 
-  print("*********")
-  print("Error " + errorcode)
+  errorcode = message.split(' ')[1]
   
   if errorcode == '401':
     print("ERROR 401: No such nickname in channel!")
@@ -79,7 +77,6 @@ def connect():
     ircsock.send(bytes("NICK "+ botnick +"\r\n", "UTF-8")) # assign the nick to the bot
     message = ircsock.recv(2048).decode("UTF-8")
     errors(message)
-    print("here")
   except:
     print("ERROR: Could not send to server: " + server)
     quit()
@@ -167,7 +164,6 @@ def random_line(filename):
   except IOError:
     print("ERROR: Could not read from file: " + filename)
     quit()
-
   return random.choice(lines)
 
 
@@ -214,10 +210,6 @@ def main():
 
         if origin.lower() == channel.lower():
 
-          #check for hello message
-          if message.find('Hi ' + botnick) != -1:
-            sendmsg("Hello " + name + "!", channel)
-
           #check for !hello message
           if message.find('!hello') != -1:
             sendmsg("Hello " + name + "!", channel)
@@ -240,7 +232,6 @@ def main():
 
             #wrong input
             else:
-              #target to the name of the user who sent the message (parsed from above)
               target = name
               message = "Message format should be ‘!tell [target] [message]’"
             
