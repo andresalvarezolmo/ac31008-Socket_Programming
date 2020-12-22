@@ -31,7 +31,7 @@ class Channel:
     def client_str(self):
         """
         Return a whitespace separated list of all clients that are in a specific channel.
-        :return: clients
+        :return: string of clients
         """
         clients = ""
         for c in self.clients:
