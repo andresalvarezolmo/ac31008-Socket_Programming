@@ -18,7 +18,7 @@ class Client:
         """
         sets the nickname of this client
         :param nick: the clients nickname
-        :return:
+        :return: void
         """
         self.has_nick = True
         if self.has_userinfo:
