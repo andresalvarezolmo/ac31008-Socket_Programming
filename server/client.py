@@ -25,6 +25,11 @@ class Client:
         self.nickname = nickname
 
     def register(self, params):
+        """
+        Registers a new client.
+        :param nick: the clients nickname
+        :return:
+        """
         if len(params) != 4:
             return False
         if self.is_registered:
