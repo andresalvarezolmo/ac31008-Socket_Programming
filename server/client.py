@@ -1,7 +1,8 @@
 
 class Client:
     """
-    represents a client object
+    represents a client object and provides functions to manipulate the user's information and to send messages
+    to the client
     """
     def __init__(self, connection, address):
         self.socket = connection
@@ -26,8 +27,10 @@ class Client:
 
     def register(self, params):
         """
-        Registers a new client.
-        :return: void
+        registers personal information with self.
+        Intended to be called by a function that handles a USER IRC message
+        :param params: list consiting of username, hostname, servername and realname
+        :return:
         """
         if len(params) != 4:
             return False
@@ -36,23 +39,24 @@ class Client:
         self.has_userinfo = True
         if self.has_nick:
             self.is_registered = True
-        self.username, self.hostname, self.sername, self.realname = params
+        self.username, self.hostname, self.servername, self.realname = params
         return True
 
-    def privmsg(self, sender, receipient, message):
+    def privmsg(self, sender, recipient, message):
         """
-        Sends private message.
-        :param sender: client sending the private message
-        :param receipient: client receiving the private message
-        :param message: message to be send
-        :return: void
+        send a IRC PRIVMSG message to a user or channel
+        :param sender: the message sender
+        :param recipient: the recipient as a str, either a nickname or channel name
+        :param message: the message to be send, prefixed with ":"
+        :return: 
         """
-        message = f":{sender.nickname}!{sender.username}@127.0.0.1 PRIVMSG {receipient} {message} \n\r"
+        message = f":{sender.nickname}!{sender.username}@127.0.0.1 PRIVMSG {recipient} {message} \n\r"
         self.socket.sendall(message.encode())
 
     def sendmsg(self, message):
         """
-        Sends message.
+        sends an arbitrary message to the client. The caller is responsible for ensuring that the message meets the IRC
+        standard's syntax
         :param message: message to be send
         :return: void
         """

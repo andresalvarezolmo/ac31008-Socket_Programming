@@ -116,7 +116,7 @@ def slapuser(target=channel):
   message = "***** " + usertoslap + " WAS SLAPPED BY A TROUT *****"
 
   try:
-    ircsock.send(bytes("PRIVMSG "+ target +" :"+ message +"\n", "UTF-8"))
+    ircsock.send(bytes("PRIVMSG "+ target +" :"+ message +"\r\n", "UTF-8"))
   except:
     print("ERROR: Could not slap user: " + usertoslap)
     quit()

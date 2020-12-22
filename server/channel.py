@@ -2,7 +2,7 @@ import logging
 class Channel:
     """
     Class to represent an IRC channel.
-    Provides functions to manipulate the channel
+    Provides functions to manipulate and interact with the channel
     """
 
     def __init__(self, name, creator):
@@ -33,14 +33,12 @@ class Channel:
         Return a whitespace separated list of all clients that are in a specific channel.
         :return: string of clients
         """
-        clients = ""
-        for c in self.clients:
-            clients += c.nickname + " "
-        return clients
+        nicknames = [c.nickname for c in self.clients]
+        return " ".join(nicknames)
 
     def broadcast(self, message, sender):
         """
-        braodcast a message to every client socket in the channel, except to the sending socking
+        broadcast a message to every client socket in the channel, except to the sending socking
         :param message: the message that should be broadcasted
         :param sender: the client object that sends the message
         :return: void
@@ -48,13 +46,12 @@ class Channel:
         for c in self.clients:
             if c is sender:
                 continue
-            logging.debug(f"in channel.braodcast: {c.nickname} - {c.socket}")
             c.privmsg(sender, self.name, message)
 
     def remove_user(self, to_remove):
         """
         removes to_remove from this channel
-        :param to_remove:
+        :param to_remove: client object that should be removed from this channel
         :return: void
         """
         if to_remove in self.clients:
