@@ -1,6 +1,7 @@
 import socket
 import select
 import logging
+import re
 from client import Client
 from channel import Channel
 
@@ -13,6 +14,7 @@ class Server:
     replies = {
         "WELCOME" : ("001", ":Welcome to our IRC server"),
         "ERR_NONICKNAMEGIVEN" : (431, ":No nickname given"),
+        "ERR_ERRONEUSNICKNAME": (432, "{} :Erroneus nickname"),
         "ERR_NICKNAMEINUSE" : (433, "{} :Nickname is already in use"),
         "ERR_NEEDMOREPARAMS" : (461, "{} :Not enough parameters"),
         "ERR_ALREADYREGISTRED" : (462, ":You may not reregister"),
@@ -169,6 +171,10 @@ class Server:
         # TODO verify nickname vilidity (no #, no duplicates)
         if not params:
             return self.generate_reply('ERR_NONICKNAMEGIVEN')
+        elif params[0] in self.registered_clients.keys():
+            return self.generate_reply('ERR_NICKNAMEINUSE', args=params)
+        elif re.search('#|&', params[0]):
+            return self.generate_reply('ERR_ERRONEUSNICKNAME', args=params)
         else:
             client.set_nick(params[0])
             if client.is_registered:
