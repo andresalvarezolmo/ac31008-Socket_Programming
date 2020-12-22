@@ -22,10 +22,10 @@ users = [] #list with all users on the channel
 
 # command line arguments
 parser = argparse.ArgumentParser(description='IRC bot parameters.')
-parser.add_argument("--hostname", help="enter the IP address of the server", required = False, default = server)
-parser.add_argument("--portnumber", type=int, help="enter the port of the server", required = False, default = port)
-parser.add_argument("--channelname", help="enter the name of the channel", required = False, default = channel)
-parser.add_argument("--botname", help="enter the name of the bot", required = False, default = botnick)
+parser.add_argument("--hostname", "--h", help="enter the IP address of the server", required = False, default = server)
+parser.add_argument("--portnumber", "--p", type=int, help="enter the port of the server", required = False, default = port)
+parser.add_argument("--channelname", "--c", help="enter the name of the channel", required = False, default = channel)
+parser.add_argument("--botname", "--b", help="enter the name of the bot", required = False, default = botnick)
 
 args = parser.parse_args()
 server = args.hostname
@@ -34,19 +34,24 @@ channel = args.channelname
 botnick = args.botname
 
 
-try:
-  ircsock.connect((server, port)) # connect to server at port...
-except:
-  print("ERROR: Could not connect to server: " + server)
-  quit()
 
-try:
-  #send some information to let the server know who we are. 
-  ircsock.send(bytes("USER "+ botnick +" "+ botnick +" "+ botnick + " " + botnick + "\r\n", "UTF-8")) # user information
-  ircsock.send(bytes("NICK "+ botnick +"\r\n", "UTF-8")) # assign the nick to the bot
-except:
-  print("ERROR: Could not send to server: " + server)
-  quit()
+def connect():
+  global ircsock
+  try:
+    ircsock.connect((server, port)) # connect to server at port...
+  except:
+    print("ERROR: Could not connect to server: " + server)
+    quit()
+
+  try:
+    #send some information to let the server know who we are. 
+    ircsock.send(bytes("USER "+ botnick +" "+ botnick +" "+ botnick + " " + botnick + "\r\n", "UTF-8")) # user information
+    ircsock.send(bytes("NICK "+ botnick +"\r\n", "UTF-8")) # assign the nick to the bot
+  except:
+    print("ERROR: Could not send to server: " + server)
+    quit()
+
+
 
 # function to join a channel, pass name 
 def joinchan(chan):
@@ -83,12 +88,11 @@ def sendmsg(msg, target):
 
 #function to update the list with users on the channel
 def updateusers():
-  ircsock.send(bytes("NAMES " + channel + "\r\n", "UTF-8")) #send names command to IRC server   
-  
   try:
+    ircsock.send(bytes("NAMES " + channel + "\r\n", "UTF-8")) #send names command to IRC server   
     userlist = ircsock.recv(2048).decode("UTF-8")
   except:
-    print("ERROR: ")
+    print("ERROR: No connection to server found")
     quit()
   
   if userlist.find('NAMES') != -1:    
@@ -135,22 +139,22 @@ def random_line(filename):
 
 
 
-def erromessage():
-  print("error")
-  #TODO
-  # 401 - no such nick
-  # 402 - no such server
-  # 403 - no such channel
-  # 404 - cannot send to channel
-  # 421 - unknown command
-  # 424 - file error
+#terminate the session 
+def exit():
+  sendmsg("Oh...Okay. :'(", channel)
+  try:
+    ircsock.send(bytes("QUIT \n", "UTF-8")) #quit command to IRC server 
+  except:
+    print("ERROR: Could not send QUIT command")
+    quit()
 
 
 
 #call the other functions as necessary and process the info
 def main():
   
-  joinchan(channel) #join the channel
+  connect()
+  joinchan(channel)
 
   import time
   #continually check for and receive new info from server
@@ -211,11 +215,10 @@ def main():
 
           #to exit bot
           if message.rstrip() == exitcode:
-            sendmsg("Oh...Okay. :'(", channel)
-            ircsock.send(bytes("QUIT \n", "UTF-8")) #quit command to IRC server 
+            exit()
             return
 
-        
+
         #if message from private channel
         if origin.lower() == botnick.lower():
            
